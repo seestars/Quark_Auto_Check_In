@@ -14,6 +14,7 @@ from typing import Callable
 from urllib.parse import parse_qs, urlparse
 
 import requests
+from tg_notify import escape, send_tg
 
 
 INFO_URL = "https://drive-m.quark.cn/1/clouddrive/capacity/growth/info"
@@ -33,6 +34,7 @@ def send(title: str, message: str) -> None:
     """Print a notification-compatible summary."""
 
     print(f"{title}:\n{message}")
+    send_tg(f"<b>{escape(title)}</b>\n\n{escape(message)}")
 
 
 def split_account_entries(raw_value: str | None) -> list[str]:
@@ -216,6 +218,7 @@ def main(
         entries = split_account_entries(cookie_value)
     except ConfigError as exc:
         print(f"❌ {exc}")
+        send_tg(f"❌ <b>夸克签到配置错误</b>\n{escape(str(exc))}")
         return 2
 
     print(f"✅ 检测到共 {len(entries)} 个夸克账号\n")
