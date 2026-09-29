@@ -1,6 +1,6 @@
 # ⭐️ 夸克网盘自动签到
 
-![GitHub stars](https://img.shields.io/github/stars/Liu8Can/Quark_Auot_Check_In) ![GitHub forks](https://img.shields.io/github/forks/Liu8Can/Quark_Auot_Check_In) ![License](https://img.shields.io/github/license/Liu8Can/Quark_Auot_Check_In) ![Last Commit](https://img.shields.io/github/last-commit/Liu8Can/Quark_Auot_Check_In) ![GitHub Actions](https://github.com/Liu8Can/Quark_Auot_Check_In/actions/workflows/quark_signin.yml/badge.svg) ![CI](https://github.com/Liu8Can/Quark_Auot_Check_In/actions/workflows/ci.yml/badge.svg)
+![GitHub stars](https://img.shields.io/github/stars/Liu8Can/Quark_Auot_Check_In) ![GitHub forks](https://img.shields.io/github/forks/Liu8Can/Quark_Auot_Check_In) ![License](https://img.shields.io/github/license/Liu8Can/Quark_Auot_Check_In) ![Last Commit](https://img.shields.io/github/last-commit/Liu8Can/Quark_Auot_Check_In) ![GitHub Actions](https://github.com/Liu8Can/Quark_Auot_Check_In/actions/workflows/quark_signin.yml/badge.svg) ![CI](https://github.com/Liu8Can/Quark_Auot_Check_In/actions/workflows/ci.yml/badge.svg) ![认可linux.do](https://ld.xh.do/ld-badge.svg)
 
 通过 GitHub Actions 自动完成夸克网盘每日签到并领取空间奖励，支持单账号和多账号。
 
@@ -22,26 +22,86 @@ Fork 本仓库后进入 **Actions** 页面。如果 GitHub 显示工作流尚未
 
 ### 2. 获取签到参数
 
-使用手机抓包工具（例如 [ProxyPin](https://github.com/wanghongenpin/proxypin)）：
+> **新版夸克 App 抓包说明**
+>
+> 近期版本的夸克 App 在部分 Android 环境下对 HTTPS 证书校验较严格。仅安装普通“用户 CA 证书”时，可能无法正常解密夸克的 HTTPS 请求。实体手机通常需要 Root 后将抓包 CA 安装为**系统证书**，配置相对麻烦。
+>
+> 因此目前更推荐使用 **MuMu 模拟器 + Root + ProxyPin 系统证书**完成抓包，不需要 Root 自己的实体手机。
 
-1. 开启 HTTPS 抓包后，在夸克 App 中进入网盘签到/领空间页面。
-2. 搜索请求地址：`https://drive-m.quark.cn/1/clouddrive/act/growth/reward`。
-3. 确认该 URL 的查询参数中包含 `kps`、`sign` 和 `vcode`。
-4. 复制完整 URL，并按下方格式保存。
+#### 推荐方案：MuMu 模拟器 + ProxyPin
 
-推荐格式：
+- [MuMu 模拟器官网](https://mumu.163.com/)
+- [ProxyPin 官方 GitHub](https://github.com/wanghongenpin/proxypin)
+
+操作步骤：
+
+1. 安装并启动 **MuMu 模拟器**。
+2. 在 MuMu 设置中开启 **Root 权限**。
+3. 在模拟器中安装 **夸克 App** 和 **ProxyPin**。
+4. 打开 ProxyPin，按照提示安装 HTTPS 抓包证书。
+5. 将 ProxyPin 的 CA 证书安装为 Android **系统证书**，而不仅是普通用户证书。
+6. 启动 ProxyPin 的 HTTPS 抓包，然后打开夸克 App。
+7. 进入夸克网盘的**签到 / 领空间**页面。
+8. 回到 ProxyPin，搜索请求域名：
 
 ```text
-user=张三; url=https://drive-m.quark.cn/1/clouddrive/act/growth/reward?...&kps=abcdefg&sign=hijklmn&vcode=111111111;
+drive-m.quark.cn
 ```
 
-旧格式仍然兼容：
+重点找到类似下面的请求：
+
+```text
+https://drive-m.quark.cn/1/clouddrive/act/growth/reward?...
+```
+
+9. 复制该请求的**完整 Request URL**。
+
+新版 URL 通常会包含较多参数，例如 `device_model`、`mt`、`ut`、`ds`、`xs`、`kps`、`sign`、`vcode` 等。本项目会从完整 URL 中自动解析签到所需的核心参数，因此**不需要手动拆解新版 URL**。
+
+> **请原样复制完整 URL。** 不要手动修改其中的 `+`、`=`、`%xx` 等字符。新版参数中可能包含字面量 `+`，当前版本已经兼容这种格式。
+
+推荐配置：
+
+```text
+user=张三; url=https://drive-m.quark.cn/1/clouddrive/act/growth/reward?...;
+```
+
+#### 旧格式仍然兼容
+
+升级后**不会影响原有用户配置**。以下方式均继续支持：
+
+**方式一：新版或旧版完整 URL**
+
+只要 URL 中包含签到需要的 `kps`、`sign`、`vcode` 参数，都可以继续直接填写：
+
+```text
+user=张三; url=https://drive-m.quark.cn/...&kps=abcdefg&sign=hijklmn&vcode=111111111;
+```
+
+以前已经保存的旧链接无需为了格式变化重新改写；如果凭证本身仍然有效，可以继续使用。
+
+**方式二：手动填写旧版参数**
+
+原来的手填格式同样完全兼容：
 
 ```text
 user=张三; kps=abcdefg; sign=hijklmn; vcode=111111111;
 ```
 
-`user` 只是日志中的账号备注，可以自行填写。参数具有账号操作权限，绝不要提交到代码、Issue 或公开截图中；如怀疑泄露，请立即在夸克 App 中退出登录并重新获取。
+也就是说，已有用户可以保持原来的 Secret 不变；新用户则更推荐直接保存完整抓包 URL，减少复制和拆分参数时出错的可能。
+
+#### 如果抓不到夸克请求
+
+如果出现以下情况：
+
+- ProxyPin 能抓到其他 App，但看不到夸克请求；
+- 打开夸克后出现网络异常；
+- ProxyPin 显示 SSL / TLS / Certificate 相关错误；
+- 安装普通用户证书后仍然无法解密夸克 HTTPS 请求；
+
+优先检查 ProxyPin CA 是否已经安装为**系统证书**。如果实体手机没有 Root，建议直接使用上面的 **MuMu + Root + ProxyPin** 方案。
+
+> `kps`、`sign`、`vcode` 以及完整抓包 URL 都属于敏感账号凭证。不要提交到代码、Issue 或公开截图中，只应保存到自己仓库的 GitHub Actions Secret `COOKIE_QUARK`。如果怀疑凭证已经泄露，请重新获取参数并及时更新 Secret。
 
 ### 3. 配置 GitHub Secret
 

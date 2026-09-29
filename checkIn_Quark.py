@@ -11,7 +11,7 @@ import os
 import re
 import sys
 from typing import Callable
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import unquote, urlparse
 
 import requests
 from tg_notify import escape, send_tg
@@ -53,8 +53,22 @@ def split_account_entries(raw_value: str | None) -> list[str]:
 def extract_params(url: str) -> dict[str, str]:
     """Extract the credentials used by the mobile growth API from a URL."""
 
-    query = parse_qs(urlparse(url).query, keep_blank_values=True)
-    return {name: query.get(name, [""])[0] for name in REQUIRED_PARAMS}
+    # Quark credentials may contain literal "+" characters.  parse_qs() treats
+    # "+" as a space (application/x-www-form-urlencoded semantics), which
+    # corrupts newer captured URLs.  Split the raw query ourselves and apply
+    # percent-decoding only, preserving literal plus signs exactly as captured.
+    query: dict[str, str] = {}
+    for part in urlparse(url).query.split("&"):
+        if not part:
+            continue
+        key, separator, value = part.partition("=")
+        if not separator:
+            value = ""
+        key = unquote(key)
+        if key not in query:
+            query[key] = unquote(value)
+
+    return {name: query.get(name, "") for name in REQUIRED_PARAMS}
 
 
 def parse_account(entry: str, index: int) -> dict[str, str]:

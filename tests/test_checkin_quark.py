@@ -47,6 +47,17 @@ class ParsingTests(unittest.TestCase):
         )
         self.assertEqual(params, {"kps": "a+b", "sign": "s", "vcode": "v"})
 
+
+    def test_extract_params_preserves_literal_plus_in_new_captured_url(self):
+        params = extract_params(
+            "https://drive-m.quark.cn/1/clouddrive/act/growth/reward"
+            "?mt=token+part&kps=AASx+abc%2Bencoded%3D"
+            "&sign=AAQH+sig%2Bencoded%3D&vcode=1790667254217&app=clouddrive"
+        )
+        self.assertEqual(params["kps"], "AASx+abc+encoded=")
+        self.assertEqual(params["sign"], "AAQH+sig+encoded=")
+        self.assertEqual(params["vcode"], "1790667254217")
+
     def test_parse_account_supports_legacy_format(self):
         account = parse_account("user=张三; kps=k; sign=s; vcode=v;", 1)
         self.assertEqual(account["user"], "张三")
